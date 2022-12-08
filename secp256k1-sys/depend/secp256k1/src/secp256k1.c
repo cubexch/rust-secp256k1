@@ -538,6 +538,21 @@ int rustsecp256k1_v0_6_1_ec_seckey_negate(const rustsecp256k1_v0_6_1_context* ct
     return ret;
 }
 
+int rustsecp256k1_v0_6_1_ec_seckey_invert(const rustsecp256k1_v0_6_1_context* ctx, unsigned char *seckey) {
+    rustsecp256k1_v0_6_1_scalar sec;
+    int ret = 0;
+    VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(seckey != NULL);
+
+    ret = rustsecp256k1_v0_6_1_scalar_set_b32_seckey(&sec, seckey);
+    rustsecp256k1_v0_6_1_scalar_cmov(&sec, &rustsecp256k1_v0_6_1_scalar_zero, !ret);
+    rustsecp256k1_v0_6_1_scalar_inverse(&sec, &sec);
+    rustsecp256k1_v0_6_1_scalar_get_b32(seckey, &sec);
+
+    rustsecp256k1_v0_6_1_scalar_clear(&sec);
+    return ret;
+}
+
 int rustsecp256k1_v0_6_1_ec_privkey_negate(const rustsecp256k1_v0_6_1_context* ctx, unsigned char *seckey) {
     return rustsecp256k1_v0_6_1_ec_seckey_negate(ctx, seckey);
 }

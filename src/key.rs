@@ -309,6 +309,20 @@ impl SecretKey {
         self
     }
 
+    /// Inverts the secret key with respect to the group order.
+    #[inline]
+    #[must_use = "you forgot to use the inverted secret key"]
+    pub fn invert(mut self) -> SecretKey {
+        unsafe {
+            let res = ffi::secp256k1_ec_seckey_invert(
+                ffi::secp256k1_context_no_precomp,
+                self.as_mut_c_ptr(),
+            );
+            debug_assert_eq!(res, 1);
+        }
+        self
+    }
+
     /// Tweaks a [`SecretKey`] by adding `tweak` modulo the curve order.
     ///
     /// # Errors
