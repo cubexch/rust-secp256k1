@@ -555,6 +555,10 @@ extern "C" {
     pub fn secp256k1_ec_seckey_negate(cx: *const Context,
                                       sk: *mut c_uchar) -> c_int;
 
+    #[cfg_attr(not(rust_secp_no_symbol_renaming), link_name = "rustsecp256k1_v0_8_0_ec_seckey_invert")]
+    pub fn secp256k1_ec_seckey_invert(cx: *const Context,
+                                      sk: *mut c_uchar) -> c_int;
+
     #[cfg_attr(not(rust_secp_no_symbol_renaming), link_name = "rustsecp256k1_v0_8_0_ec_seckey_tweak_add")]
     pub fn secp256k1_ec_seckey_tweak_add(cx: *const Context,
                                         sk: *mut c_uchar,
