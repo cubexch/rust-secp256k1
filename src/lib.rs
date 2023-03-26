@@ -177,7 +177,7 @@ pub mod ecdsa;
 pub mod scalar;
 pub mod schnorr;
 #[cfg(feature = "serde")]
-mod serde_util;
+pub mod serde_util;
 
 use core::marker::PhantomData;
 use core::ptr::NonNull;

@@ -1,3 +1,5 @@
+#![allow(missing_docs, missing_copy_implementations, missing_debug_implementations)]
+
 use core::fmt;
 use core::marker::PhantomData;
 use core::str::{self, FromStr};
@@ -65,7 +67,7 @@ where
 
 macro_rules! impl_tuple_visitor {
     ($thing:ident, $len:expr) => {
-        pub(crate) struct $thing<F> {
+        pub struct $thing<F> {
             expectation: &'static str,
             parse_fn: F,
         }
