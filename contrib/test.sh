@@ -13,6 +13,12 @@ if cargo --version | grep nightly; then
     NIGHTLY=true
 fi
 
+# Pin dependencies as required if we are using MSRV toolchain.
+if cargo --version | grep "1\.48"; then
+    cargo update -p wasm-bindgen-test --precise 0.3.34
+    cargo update -p serde --precise 1.0.156
+fi
+
 # Test if panic in C code aborts the process (either with a real panic or with SIGILL)
 cargo test -- --ignored --exact 'tests::test_panic_raw_ctx_should_terminate_abnormally' 2>&1 | tee /dev/stderr | grep "SIGILL\\|panicked at '\[libsecp256k1\]"
 
@@ -43,13 +49,13 @@ if [ "$DO_FEATURE_MATRIX" = true ]; then
         cargo test --all --no-default-features --features="std,$feature"
     done
     # Other combos 
-    RUSTFLAGS='--cfg=fuzzing' RUSTDOCFLAGS='--cfg=fuzzing' cargo test --all
-    RUSTFLAGS='--cfg=fuzzing' RUSTDOCFLAGS='--cfg=fuzzing' cargo test --all --features="$FEATURES"
+    RUSTFLAGS='--cfg=secp256k1_fuzz' RUSTDOCFLAGS='--cfg=secp256k1_fuzz' cargo test --all
+    RUSTFLAGS='--cfg=secp256k1_fuzz' RUSTDOCFLAGS='--cfg=secp256k1_fuzz' cargo test --all --features="$FEATURES"
     cargo test --all --features="rand serde"
 
     if [ "$NIGHTLY" = true ]; then
         cargo test --all --all-features
-        RUSTFLAGS='--cfg=fuzzing' RUSTDOCFLAGS='--cfg=fuzzing' cargo test --all --all-features
+        RUSTFLAGS='--cfg=secp256k1_fuzz' RUSTDOCFLAGS='--cfg=secp256k1_fuzz' cargo test --all --all-features
     fi
 
     # Examples
@@ -58,9 +64,23 @@ if [ "$DO_FEATURE_MATRIX" = true ]; then
     cargo run --example generate_keys --features=rand-std
 fi
 
+if [ "$DO_LINT" = true ]
+then
+    cargo clippy --all-features --all-targets -- -D warnings
+    cargo clippy --example sign_verify --features=bitcoin-hashes-std -- -D warnings
+    cargo clippy --example sign_verify_recovery --features=recovery,bitcoin-hashes-std -- -D warnings
+    cargo clippy --example generate_keys --features=rand-std -- -D warnings
+fi
+
 # Build the docs if told to (this only works with the nightly toolchain)
+if [ "$DO_DOCSRS" = true ]; then
+    RUSTDOCFLAGS="--cfg docsrs -D warnings -D rustdoc::broken-intra-doc-links" cargo +nightly doc --all-features
+fi
+
+# Build the docs with a stable toolchain, in unison with the DO_DOCSRS command
+# above this checks that we feature guarded docs imports correctly.
 if [ "$DO_DOCS" = true ]; then
-    RUSTDOCFLAGS="--cfg docsrs" cargo rustdoc --features="$FEATURES" -- -D rustdoc::broken-intra-doc-links -D warnings || exit 1
+    RUSTDOCFLAGS="-D warnings" cargo +stable doc --all-features
 fi
 
 # Webassembly stuff
@@ -81,8 +101,10 @@ if [ "$DO_ASAN" = true ]; then
     ASAN_OPTIONS='detect_leaks=1 detect_invalid_pointer_pairs=1 detect_stack_use_after_return=1' \
     cargo test --lib --all --features="$FEATURES" -Zbuild-std --target x86_64-unknown-linux-gnu
     cargo clean
-    CC='clang -fsanitize=memory -fno-omit-frame-pointer'                                         \
-    RUSTFLAGS='-Zsanitizer=memory -Zsanitizer-memory-track-origins -Cforce-frame-pointers=yes'   \
+    # The -Cllvm-args=-msan-eager-checks=0 flag was added to overcome this issue:
+    # https://github.com/rust-bitcoin/rust-secp256k1/pull/573#issuecomment-1399465995
+    CC='clang -fsanitize=memory -fno-omit-frame-pointer'                                                                        \
+    RUSTFLAGS='-Zsanitizer=memory -Zsanitizer-memory-track-origins -Cforce-frame-pointers=yes -Cllvm-args=-msan-eager-checks=0' \
     cargo test --lib --all --features="$FEATURES" -Zbuild-std --target x86_64-unknown-linux-gnu
     cargo run --release --manifest-path=./no_std_test/Cargo.toml | grep -q "Verified Successfully"
     cargo run --release --features=alloc --manifest-path=./no_std_test/Cargo.toml | grep -q "Verified alloc Successfully"

@@ -1,17 +1,4 @@
-// Bitcoin secp256k1 bindings
-// Written in 2014 by
-//   Dawid Ciężarkiewicz
-//   Andrew Poelstra
-//
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
+// SPDX-License-Identifier: CC0-1.0
 
 //! Provides a signing function that allows recovering the public key from the
 //! signature.
@@ -126,7 +113,6 @@ impl RecoverableSignature {
     /// verify-capable context.
     #[inline]
     #[cfg(feature = "global-context")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "global-context")))]
     pub fn recover(&self, msg: &Message) -> Result<key::PublicKey, Error> {
         crate::SECP256K1.recover_ecdsa(msg, self)
     }
@@ -264,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))]  // fixed sig vectors can't work with fuzz-sigs
+    #[cfg(not(secp256k1_fuzz))]  // fixed sig vectors can't work with fuzz-sigs
     #[cfg(feature = "rand-std")]
     #[rustfmt::skip]
     fn sign() {
@@ -289,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))]  // fixed sig vectors can't work with fuzz-sigs
+    #[cfg(not(secp256k1_fuzz))]  // fixed sig vectors can't work with fuzz-sigs
     #[cfg(feature = "rand-std")]
     #[rustfmt::skip]
     fn sign_with_noncedata() {

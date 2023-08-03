@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: CC0-1.0
+
 //! Provides [`Scalar`] and related types.
 //!
 //! In elliptic curve cryptography scalars are non-point values that can be used to multiply
@@ -6,7 +8,7 @@
 //! provides the `Scalar` type and related.
 //!
 
-use core::fmt;
+use core::{fmt, ops};
 
 use crate::constants;
 
@@ -20,9 +22,10 @@ use crate::constants;
 // Internal represenation is big endian to match what `libsecp256k1` uses.
 // Also easier to implement comparison.
 // Debug impl omitted for now, the bytes may be secret
-#[allow(missing_debug_implementations)]
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Scalar([u8; 32]);
+impl_pretty_debug!(Scalar);
+impl_non_secure_erase!(Scalar, 0, [0u8; 32]);
 
 const MAX_RAW: [u8; 32] = [
     0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFE,
@@ -39,12 +42,10 @@ impl Scalar {
 
     /// Generates a random scalar
     #[cfg(feature = "rand-std")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rand-std")))]
     pub fn random() -> Self { Self::random_custom(rand::thread_rng()) }
 
     /// Generates a random scalar using supplied RNG
     #[cfg(feature = "rand")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
     pub fn random_custom<R: rand::Rng>(mut rng: R) -> Self {
         let mut bytes = [0u8; 32];
         loop {
@@ -107,6 +108,16 @@ impl Scalar {
     }
 }
 
+impl<I> ops::Index<I> for Scalar
+where
+    [u8]: ops::Index<I>,
+{
+    type Output = <[u8] as ops::Index<I>>::Output;
+
+    #[inline]
+    fn index(&self, index: I) -> &Self::Output { &self.0[index] }
+}
+
 impl From<crate::SecretKey> for Scalar {
     fn from(value: crate::SecretKey) -> Self { Scalar(value.secret_bytes()) }
 }
@@ -126,5 +137,4 @@ impl fmt::Display for OutOfRangeError {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for OutOfRangeError {}

@@ -1,16 +1,4 @@
-// Bitcoin secp256k1 bindings
-// Written in 2021 by
-//   Maxim Orlovsky <orlovsky@pandoracore.com>
-//
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
+// SPDX-License-Identifier: CC0-1.0
 
 //! Helpers for displaying secret values
 
@@ -24,7 +12,6 @@ macro_rules! impl_display_secret {
     // Default hasher exists only in standard library and not alloc
     ($thing:ident) => {
         #[cfg(feature = "std")]
-        #[cfg_attr(docsrs, doc(cfg(feature = "std")))]
         impl core::fmt::Debug for $thing {
             fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
                 use core::hash::Hasher;
@@ -86,6 +73,7 @@ macro_rules! impl_display_secret {
 pub struct DisplaySecret {
     secret: [u8; SECRET_KEY_SIZE],
 }
+impl_non_secure_erase!(DisplaySecret, secret, [0u8; SECRET_KEY_SIZE]);
 
 impl fmt::Debug for DisplaySecret {
     #[inline]
@@ -182,7 +170,7 @@ impl SharedSecret {
     /// # Examples
     ///
     /// ```
-    /// # #[cfg(not(fuzzing))]
+    /// # #[cfg(not(secp256k1_fuzz))]
     /// # #[cfg(feature = "std")] {
     /// # use std::str::FromStr;
     /// use secp256k1::{SecretKey, PublicKey};

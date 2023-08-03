@@ -1,17 +1,4 @@
-// Bitcoin secp256k1 bindings
-// Written in 2014 by
-//   Dawid Ciężarkiewicz
-//   Andrew Poelstra
-//
-// To the extent possible under law, the author(s) have dedicated all
-// copyright and related and neighboring rights to this software to
-// the public domain worldwide. This software is distributed without
-// any warranty.
-//
-// You should have received a copy of the CC0 Public Domain Dedication
-// along with this software.
-// If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
-//
+// SPDX-License-Identifier: CC0-1.0
 
 //! Rust bindings for Pieter Wuille's secp256k1 library, which is used for
 //! fast and accurate manipulation of ECDSA signatures on the secp256k1
@@ -124,7 +111,7 @@
 //!     0xc9, 0x42, 0x8f, 0xca, 0x69, 0xc1, 0x32, 0xa2,
 //! ]).expect("compact signatures are 64 bytes; DER signatures are 68-72 bytes");
 //!
-//! # #[cfg(not(fuzzing))]
+//! # #[cfg(not(secp256k1_fuzz))]
 //! assert!(secp.verify_ecdsa(&message, &sig, &public_key).is_ok());
 //! # }
 //! ```
@@ -154,7 +141,7 @@
 #![warn(missing_docs, missing_copy_implementations, missing_debug_implementations)]
 #![cfg_attr(all(not(test), not(feature = "std")), no_std)]
 // Experimental features we need.
-#![cfg_attr(docsrs, feature(doc_cfg))]
+#![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(bench, feature(test))]
 
 #[cfg(feature = "alloc")]
@@ -184,17 +171,13 @@ use core::ptr::NonNull;
 use core::{fmt, mem, str};
 
 #[cfg(feature = "bitcoin_hashes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin-hashes")))]
 pub use bitcoin_hashes as hashes;
 #[cfg(feature = "global-context")]
-#[cfg_attr(docsrs, doc(cfg(feature = "global-context")))]
 pub use context::global::SECP256K1;
 #[cfg(feature = "rand")]
-#[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
 pub use rand;
 pub use secp256k1_sys as ffi;
 #[cfg(feature = "serde")]
-#[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub use serde;
 
 pub use crate::context::*;
@@ -214,25 +197,22 @@ pub trait ThirtyTwoByteHash {
 }
 
 #[cfg(feature = "bitcoin_hashes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin-hashes")))]
 impl ThirtyTwoByteHash for hashes::sha256::Hash {
-    fn into_32(self) -> [u8; 32] { self.into_inner() }
+    fn into_32(self) -> [u8; 32] { self.to_byte_array() }
 }
 
 #[cfg(feature = "bitcoin_hashes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin-hashes")))]
 impl ThirtyTwoByteHash for hashes::sha256d::Hash {
-    fn into_32(self) -> [u8; 32] { self.into_inner() }
+    fn into_32(self) -> [u8; 32] { self.to_byte_array() }
 }
 
 #[cfg(feature = "bitcoin_hashes")]
-#[cfg_attr(docsrs, doc(cfg(feature = "bitcoin-hashes")))]
 impl<T: hashes::sha256t::Tag> ThirtyTwoByteHash for hashes::sha256t::Hash<T> {
-    fn into_32(self) -> [u8; 32] { self.into_inner() }
+    fn into_32(self) -> [u8; 32] { self.to_byte_array() }
 }
 
 /// A (hashed) message input to an ECDSA signature.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Message([u8; constants::MESSAGE_SIZE]);
 impl_array_newtype!(Message, u8, constants::MESSAGE_SIZE);
 impl_pretty_debug!(Message);
@@ -275,7 +255,6 @@ impl Message {
     /// # }
     /// ```
     #[cfg(feature = "bitcoin_hashes")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "bitcoin-hashes")))]
     pub fn from_hashed_data<H: ThirtyTwoByteHash + hashes::Hash>(data: &[u8]) -> Self {
         <H as hashes::Hash>::hash(data).into()
     }
@@ -349,7 +328,6 @@ impl fmt::Display for Error {
 }
 
 #[cfg(feature = "std")]
-#[cfg_attr(docsrs, doc(cfg(feature = "std")))]
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
@@ -422,7 +400,6 @@ impl<C: Context> Secp256k1<C> {
     /// Requires compilation with "rand" feature. See comment by Gregory Maxwell in
     /// [libsecp256k1](https://github.com/bitcoin-core/secp256k1/commit/d2275795ff22a6f4738869f5528fbbb61738aa48).
     #[cfg(feature = "rand")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
     pub fn randomize<R: rand::Rng + ?Sized>(&mut self, rng: &mut R) {
         let mut seed = [0u8; 32];
         rng.fill_bytes(&mut seed);
@@ -453,7 +430,6 @@ impl<C: Signing> Secp256k1<C> {
     /// [`PublicKey::from_secret_key`].
     #[inline]
     #[cfg(feature = "rand")]
-    #[cfg_attr(docsrs, doc(cfg(feature = "rand")))]
     pub fn generate_keypair<R: rand::Rng + ?Sized>(
         &self,
         rng: &mut R,
@@ -467,7 +443,6 @@ impl<C: Signing> Secp256k1<C> {
 /// Generates a random keypair using the global [`SECP256K1`] context.
 #[inline]
 #[cfg(all(feature = "global-context", feature = "rand"))]
-#[cfg_attr(docsrs, doc(cfg(all(feature = "global-context", feature = "rand"))))]
 pub fn generate_keypair<R: rand::Rng + ?Sized>(rng: &mut R) -> (key::SecretKey, key::PublicKey) {
     SECP256K1.generate_keypair(rng)
 }
@@ -796,12 +771,12 @@ mod tests {
             if compact[0] < 0x80 {
                 assert_eq!(sig, low_r_sig);
             } else {
-                #[cfg(not(fuzzing))] // mocked sig generation doesn't produce low-R sigs
+                #[cfg(not(secp256k1_fuzz))] // mocked sig generation doesn't produce low-R sigs
                 assert_ne!(sig, low_r_sig);
             }
-            #[cfg(not(fuzzing))] // mocked sig generation doesn't produce low-R sigs
+            #[cfg(not(secp256k1_fuzz))] // mocked sig generation doesn't produce low-R sigs
             assert!(ecdsa::compact_sig_has_zero_first_bit(&low_r_sig.0));
-            #[cfg(not(fuzzing))] // mocked sig generation doesn't produce low-R sigs
+            #[cfg(not(secp256k1_fuzz))] // mocked sig generation doesn't produce low-R sigs
             assert!(ecdsa::der_length_check(&grind_r_sig.0, 70));
         }
     }
@@ -912,7 +887,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))] // fuzz-sigs have fixed size/format
+    #[cfg(not(secp256k1_fuzz))] // fuzz-sigs have fixed size/format
     #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_noncedata() {
         let secp = Secp256k1::new();
@@ -931,7 +906,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))] // fixed sig vectors can't work with fuzz-sigs
+    #[cfg(not(secp256k1_fuzz))] // fixed sig vectors can't work with fuzz-sigs
     #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_low_s() {
         // nb this is a transaction on testnet
@@ -954,7 +929,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))] // fuzz-sigs have fixed size/format
+    #[cfg(not(secp256k1_fuzz))] // fuzz-sigs have fixed size/format
     #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_low_r() {
         let secp = Secp256k1::new();
@@ -972,7 +947,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(not(fuzzing))] // fuzz-sigs have fixed size/format
+    #[cfg(not(secp256k1_fuzz))] // fuzz-sigs have fixed size/format
     #[cfg(any(feature = "alloc", feature = "std"))]
     fn test_grind_r() {
         let secp = Secp256k1::new();
@@ -989,7 +964,7 @@ mod tests {
     }
 
     #[cfg(feature = "serde")]
-    #[cfg(not(fuzzing))] // fixed sig vectors can't work with fuzz-sigs
+    #[cfg(not(secp256k1_fuzz))] // fixed sig vectors can't work with fuzz-sigs
     #[cfg(any(feature = "alloc", feature = "std"))]
     #[test]
     fn test_serde() {
@@ -1046,12 +1021,12 @@ mod tests {
 
         let hash = hashes::sha256::Hash::hash(test_bytes);
         let msg = Message::from(hash);
-        assert_eq!(msg.0, hash.into_inner());
+        assert_eq!(msg.0, hash.to_byte_array());
         assert_eq!(msg, Message::from_hashed_data::<hashes::sha256::Hash>(test_bytes));
 
         let hash = hashes::sha256d::Hash::hash(test_bytes);
         let msg = Message::from(hash);
-        assert_eq!(msg.0, hash.into_inner());
+        assert_eq!(msg.0, hash.to_byte_array());
         assert_eq!(msg, Message::from_hashed_data::<hashes::sha256d::Hash>(test_bytes));
     }
 }

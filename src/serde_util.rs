@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC0-1.0
 #![allow(missing_docs, missing_copy_implementations, missing_debug_implementations)]
 
 use core::fmt;
