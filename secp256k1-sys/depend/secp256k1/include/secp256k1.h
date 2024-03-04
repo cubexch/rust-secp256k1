@@ -688,6 +688,13 @@ SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int rustsecp256k1_v0_8_1_ec_seckey_ne
     unsigned char *seckey
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
 
+/** Inverts a secret key in place with respect to the group order.
+ */
+SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int rustsecp256k1_v0_8_1_ec_seckey_invert(
+    const rustsecp256k1_v0_8_1_context* ctx,
+    unsigned char *seckey
+) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2);
+
 /** Same as rustsecp256k1_v0_8_1_ec_seckey_negate, but DEPRECATED. Will be removed in
  *  future versions. */
 SECP256K1_API SECP256K1_WARN_UNUSED_RESULT int rustsecp256k1_v0_8_1_ec_privkey_negate(
